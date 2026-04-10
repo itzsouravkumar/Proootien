@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+frontend/.vite/
+
+# Python bytecode
+*.egg-info/
+dist/
+build/
+
+# Models (can be regenerated)
+models/*.pt
+
+# PDB cache (optional)
+data/pdb_cache/*.pdb
+
+# Environment
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+# Local-only scripts (do not commit)
+faculty_presentation.py
+graph_visualizer.py
+training_visualization.py
