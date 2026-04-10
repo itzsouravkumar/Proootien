@@ -1,0 +1,52 @@
+{
+  "pdb_ids": [
+    "1crn",
+    "4hhb",
+    "1ubq"
+  ],
+  "epochs": 60,
+  "batch_size": 64,
+  "protein_summaries": [
+    {
+      "pdb_id": "1crn",
+      "num_atoms": 327,
+      "num_residues": 46,
+      "surface_residues": 46,
+      "graph_nodes": 46,
+      "graph_edges": 215,
+      "num_pockets": 1
+    },
+    {
+      "pdb_id": "4hhb",
+      "num_atoms": 4384,
+      "num_residues": 574,
+      "surface_residues": 574,
+      "graph_nodes": 574,
+      "graph_edges": 2949,
+      "num_pockets": 1
+    },
+    {
+      "pdb_id": "1ubq",
+      "num_atoms": 602,
+      "num_residues": 76,
+      "surface_residues": 76,
+      "graph_nodes": 76,
+      "graph_edges": 326,
+      "num_pockets": 1
+    }
+  ],
+  "data_summary": {
+    "num_rows": 696,
+    "num_features": 12,
+    "label_mean": 0.3011932671070099,
+    "label_std": 0.21085794270038605,
+    "label_min": 0.0,
+    "label_max": 0.9375,
+    "parse_failures": []
+  },
+  "final_metrics": {
+    "final_loss": 0.0010165444321253083,
+    "best_loss": 0.0008788626556369392,
+    "mean_abs_error": 0.013004454784095287
+  }
+}

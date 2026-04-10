@@ -95,6 +95,21 @@ npm run dev
 
 Open http://localhost:5173 in your browser.
 
+### Generate GNN Training Visuals (for presentations)
+
+This script runs the real backend pipeline (PDB parsing, surface graph extraction, label generation, and GNN training) and exports visual PNGs.
+
+```bash
+source venv/bin/activate
+python gnn_training_storyboard.py --pdb-ids 1crn 4hhb 1ubq --epochs 60
+```
+
+Output files are saved to `training_visualization/`:
+- `gnn_data_pipeline.png`
+- `gnn_training_dynamics.png`
+- `gnn_architecture_flow.png`
+- `gnn_storyboard_summary.json`
+
 ## API Endpoints
 
 | Endpoint | Method | Description |

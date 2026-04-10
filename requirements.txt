@@ -15,4 +15,5 @@ torch==2.2.0
 torch-geometric==2.5.0
 scikit-learn==1.4.0
 plotly==5.20.0
+matplotlib==3.8.4
 nglview==3.1.2
