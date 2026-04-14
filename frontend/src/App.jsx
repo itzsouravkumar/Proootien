@@ -106,7 +106,7 @@ function Viewer3D({ pdbId, hotspots = [] }) {
         // Render
         viewer.zoomTo()
         viewer.render()
-        viewer.spin('y', 0.5)
+        viewer.spin(false)
         
         setViewerStatus('ready')
         
@@ -241,45 +241,55 @@ function App() {
         </div>
         <div style={S.headerRight}>
           {trainLoss !== null && <span style={S.loss}>Loss: {trainLoss.toFixed(4)}</span>}
-          <span style={{...S.badge, background: modelReady ? '#10b981' : '#f59e0b'}}>
+          <span style={{...S.badge, background: modelReady ? '#0a0a0a' : '#0a0a0a', color: modelReady ? '#ededed' : '#888888', border: `1px solid ${modelReady ? '#333333' : '#262626'}`}}>
             {modelReady ? 'Model Ready' : 'Not Trained'}
           </span>
         </div>
       </header>
 
-      <div style={S.controls}>
-        <div style={S.card}>
-          <h3 style={S.cardTitle}>Analyze</h3>
-          <div style={S.row}>
-            <input style={S.input} value={pdbId} onChange={e => setPdbId(e.target.value)} placeholder="PDB ID" onKeyDown={e => e.key === 'Enter' && analyze()} />
-            <button style={S.btn} onClick={analyze} disabled={loading}>{loading ? '...' : 'Analyze'}</button>
+      <div style={S.grid}>
+        {/* Controls Card - Span 24 */}
+        <div style={{...S.card, gridColumn: '1 / -1', flexDirection: 'row', flexWrap: 'wrap', gap: 24, padding: '24px 32px'}}>
+          <div style={{flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: 16}}>
+            <h3 style={S.cardTitle}>Analyze Protein</h3>
+            <div style={S.row}>
+              <input style={S.input} value={pdbId} onChange={e => setPdbId(e.target.value)} placeholder="PDB ID" onKeyDown={e => e.key === 'Enter' && analyze()} />
+              <button style={{...S.btn, opacity: loading ? 0.7 : 1}} onClick={analyze} disabled={loading}>{loading ? 'Analyzing...' : 'Analyze'}</button>
+            </div>
+          </div>
+          
+          <div style={S.divider} />
+
+          <div style={{flex: '1 1 400px', display: 'flex', flexDirection: 'column', gap: 16}}>
+            <h3 style={S.cardTitle}>Train GNN</h3>
+            <div style={S.row}>
+              <input style={{...S.input, flex: 2}} value={trainingIds} onChange={e => setTrainingIds(e.target.value)} placeholder="PDB IDs (comma separated)" />
+              <input style={{...S.input, width: 80, flex: 'none'}} type="number" value={epochs} onChange={e => setEpochs(+e.target.value || 50)} placeholder="Epochs" />
+              <button style={{...S.btn, ...S.btnTrain, opacity: training ? 0.7 : 1}} onClick={train} disabled={training}>{training ? 'Training...' : 'Train Mode'}</button>
+            </div>
           </div>
         </div>
-        <div style={S.card}>
-          <h3 style={S.cardTitle}>Train GNN</h3>
-          <div style={S.row}>
-            <input style={{...S.input, flex: 2}} value={trainingIds} onChange={e => setTrainingIds(e.target.value)} placeholder="PDB IDs" />
-            <input style={{...S.input, width: 60}} type="number" value={epochs} onChange={e => setEpochs(+e.target.value || 50)} />
-            <button style={{...S.btn, background: '#8b5cf6'}} onClick={train} disabled={training}>{training ? '...' : 'Train'}</button>
-          </div>
-        </div>
-      </div>
 
-      {error && <div style={S.error}>{error}</div>}
+        {error && <div style={{...S.error, gridColumn: '1 / -1'}}>{error}</div>}
 
-      {results && (
-        <>
-          <div style={S.stats}>
-            <Stat label="Protein" value={results.protein_id?.toUpperCase()} />
-            <Stat label="Surface" value={results.features?.summary?.total_surface_residues || 0} />
-            <Stat label="Pockets" value={results.features?.pockets?.length || 0} />
-            <Stat label="Hotspots" value={results.features?.hotspots?.length || 0} />
-          </div>
+        {results && (
+          <>
+            {/* Stats - Span 24 */}
+            <div style={{...S.card, gridColumn: '1 / -1', padding: '20px 32px'}}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 20}}>
+                <Stat label="Protein" value={results.protein_id?.toUpperCase()} />
+                <Stat label="Total Surface" value={results.features?.summary?.total_surface_residues || 0} />
+                <Stat label="Pockets Found" value={results.features?.pockets?.length || 0} />
+                <Stat label="GNN Hotspots" value={results.features?.hotspots?.length || 0} />
+              </div>
+            </div>
 
-          <div style={S.main}>
-            <div style={S.viewerCard}>
-              <h3 style={S.cardTitle}>3D Structure</h3>
-              <Viewer3D pdbId={results.protein_id} hotspots={results.features?.hotspots || []} />
+            {/* Viewer - Span 13 */}
+            <div style={{...S.card, gridColumn: 'span 13', minHeight: 500}}>
+              <h3 style={S.cardTitle}>3D Structure Configuration</h3>
+              <div style={{flex: 1, border: '1px solid #1a1a1a', borderRadius: 8, overflow: 'hidden'}}>
+                <Viewer3D pdbId={results.protein_id} hotspots={results.features?.hotspots || []} />
+              </div>
               <div style={S.legend}>
                 <span style={S.legendItem}><span style={{...S.legendDot, background: '#ef4444'}}></span>Top 3</span>
                 <span style={S.legendItem}><span style={{...S.legendDot, background: '#f59e0b'}}></span>Top 4-6</span>
@@ -287,24 +297,25 @@ function App() {
               </div>
             </div>
 
-            <div style={S.sidebar}>
-              <div style={S.card}>
+            {/* Data Columns - Span 11 */}
+            <div style={{gridColumn: 'span 11', display: 'flex', flexDirection: 'column', gap: 16}}>
+              <div style={{...S.card, flex: 1, maxHeight: 350}}>
                 <h3 style={S.cardTitle}>GNN Hotspots</h3>
                 <div style={S.list}>
                   {(results.features?.hotspots || []).map((h, i) => (
                     <div key={i} style={S.hotspot}>
-                      <span style={{...S.rank, color: i < 3 ? '#ef4444' : '#64748b'}}>#{i+1}</span>
+                      <span style={S.rank}>#{i+1}</span>
                       <span style={S.resId}>{h.residue_id}</span>
                       <span style={S.resName}>{h.residue_name}</span>
-                      <div style={S.bar}><div style={{...S.fill, width: `${h.gnn_score*100}%`, background: i < 3 ? '#ef4444' : i < 6 ? '#f59e0b' : '#3b82f6'}} /></div>
-                      <span style={{...S.pct, color: i < 3 ? '#ef4444' : '#10b981'}}>{(h.gnn_score*100).toFixed(0)}%</span>
+                      <div style={S.barWrap}><div style={{...S.fill, width: `${h.gnn_score*100}%`, background: i < 3 ? '#ef4444' : i < 6 ? '#f59e0b' : '#3b82f6'}} /></div>
+                      <span style={S.pct}>{(h.gnn_score*100).toFixed(0)}%</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div style={S.card}>
-                <h3 style={S.cardTitle}>Pockets</h3>
+              <div style={{...S.card, flex: 1, maxHeight: 350}}>
+                <h3 style={S.cardTitle}>Identified Pockets</h3>
                 <div style={S.list}>
                   {(results.features?.pockets || []).slice(0,5).map((p, i) => (
                     <div key={i} style={S.pocket}>
@@ -313,17 +324,17 @@ function App() {
                         <span style={S.pocketVol}>{p.volume?.toFixed(0)} Å³</span>
                       </div>
                       <div style={S.pocketStats}>
-                        <span>H: {p.hydrophobicity?.toFixed(2)}</span>
-                        <span>C: {p.charge?.toFixed(2)}</span>
+                        <span>H: <span style={{color: '#ededed'}}>{p.hydrophobicity?.toFixed(2)}</span></span>
+                        <span>C: <span style={{color: '#ededed'}}>{p.charge?.toFixed(2)}</span></span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -336,43 +347,96 @@ const Stat = ({ label, value }) => (
 )
 
 const S = {
-  container: { maxWidth: 1300, margin: '0 auto', padding: 20, fontFamily: 'system-ui, sans-serif', background: '#0f172a', minHeight: '100vh', color: '#e2e8f0' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #334155' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 12 },
-  title: { fontSize: 24, fontWeight: 700, color: '#f1f5f9' },
-  sub: { fontSize: 13, color: '#64748b' },
-  loss: { fontSize: 11, color: '#94a3b8', background: '#1e293b', padding: '4px 8px', borderRadius: 4 },
-  badge: { padding: '6px 14px', borderRadius: 16, fontSize: 11, fontWeight: 600, color: '#fff' },
-  controls: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 },
-  card: { background: '#1e293b', borderRadius: 12, padding: 16 },
-  cardTitle: { fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  container: { width: '100%', margin: '0 auto', padding: '40px 4vw', background: '#000000', minHeight: '100vh', color: '#ededed' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, paddingBottom: 24, borderBottom: '1px solid #262626' },
+  headerRight: { display: 'flex', alignItems: 'center', gap: 16 },
+  title: { fontSize: '24px', fontWeight: 500, color: '#ededed', letterSpacing: '-0.02em', margin: '0 0 4px 0' },
+  sub: { fontSize: '14px', color: '#888888', fontWeight: 400, margin: 0 },
+  loss: { fontSize: 13, color: '#ededed', background: '#111111', padding: '4px 10px', borderRadius: 4, border: '1px solid #333333' },
+  badge: { padding: '4px 10px', borderRadius: 4, fontSize: 12, fontWeight: 500 },
+  
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(24, 1fr)',
+    gap: 16,
+    alignItems: 'start'
+  },
+  
+  card: { 
+    background: '#0a0a0a', 
+    borderRadius: 8, 
+    padding: 24, 
+    border: '1px solid #262626',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  cardTitle: { 
+    fontSize: 13, 
+    fontWeight: 500, 
+    color: '#888888', 
+    marginBottom: 16, 
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    margin: 0
+  },
+  
+  divider: { width: 1, background: '#262626', margin: '0 16px' },
   row: { display: 'flex', gap: 8 },
-  input: { flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #334155', background: '#0f172a', color: '#e2e8f0', fontSize: 13, outline: 'none' },
-  btn: { padding: '10px 20px', borderRadius: 8, border: 'none', background: '#3b82f6', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 },
-  error: { background: '#7f1d1d', color: '#fca5a5', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 },
-  stats: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 },
-  stat: { background: '#1e293b', borderRadius: 10, padding: 16, textAlign: 'center' },
-  statVal: { fontSize: 22, fontWeight: 700, color: '#3b82f6' },
-  statLabel: { fontSize: 10, color: '#64748b', marginTop: 4, textTransform: 'uppercase' },
-  main: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16 },
-  viewerCard: { background: '#1e293b', borderRadius: 12, padding: 16 },
-  legend: { display: 'flex', justifyContent: 'center', gap: 20, marginTop: 12, paddingTop: 12, borderTop: '1px solid #334155' },
-  legendItem: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' },
-  legendDot: { width: 10, height: 10, borderRadius: '50%' },
-  sidebar: { display: 'flex', flexDirection: 'column', gap: 16 },
-  list: { maxHeight: 280, overflowY: 'auto' },
-  hotspot: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid #334155' },
-  rank: { fontSize: 11, fontWeight: 700, width: 24 },
-  resId: { fontWeight: 600, color: '#f1f5f9', fontSize: 12, width: 60 },
-  resName: { color: '#64748b', fontSize: 11, width: 36 },
-  bar: { flex: 1, height: 6, background: '#334155', borderRadius: 3, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 3 },
-  pct: { fontWeight: 700, width: 36, textAlign: 'right', fontSize: 12 },
-  pocket: { padding: '10px 0', borderBottom: '1px solid #334155' },
+  input: { 
+    flex: 1, 
+    padding: '10px 14px', 
+    borderRadius: 6, 
+    border: '1px solid #333333', 
+    background: '#000000', 
+    color: '#ededed', 
+    fontSize: 14, 
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    fontFamily: 'inherit'
+  },
+  btn: { 
+    padding: '0 16px', 
+    borderRadius: 6, 
+    border: '1px solid #333333', 
+    background: '#111111', 
+    color: '#ededed', 
+    fontWeight: 500, 
+    cursor: 'pointer', 
+    fontSize: 13,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'inherit'
+  },
+  btnTrain: {
+    background: '#ededed',
+    color: '#000000',
+    border: '1px solid #ededed',
+  },
+  error: { background: '#1a0505', color: '#ff8888', padding: '16px', borderRadius: 8, border: '1px solid #3a1111', fontSize: 14 },
+  
+  statVal: { fontSize: 24, fontWeight: 500, color: '#ededed', marginBottom: 2, letterSpacing: '-0.02em' },
+  statLabel: { fontSize: 11, color: '#888888', textTransform: 'uppercase', letterSpacing: '0.06em' },
+  stat: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
+  
+  legend: { display: 'flex', justifyContent: 'center', gap: 24, marginTop: 24, paddingTop: 16, borderTop: '1px solid #262626' },
+  legendItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#888888' },
+  legendDot: { width: 8, height: 8, borderRadius: '50%' },
+  
+  list: { overflowY: 'auto', flex: 1, paddingRight: 8, marginTop: 16 },
+  hotspot: { display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #1a1a1a' },
+  rank: { fontSize: 12, fontWeight: 500, width: 24, color: '#888888' },
+  resId: { fontWeight: 500, color: '#ededed', fontSize: 13, width: 60 },
+  resName: { color: '#888888', fontSize: 12, width: 36 },
+  barWrap: { flex: 1, height: 4, background: '#1a1a1a', borderRadius: 2, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 2 },
+  pct: { fontWeight: 500, width: 36, textAlign: 'right', fontSize: 12, color: '#888888' },
+  
+  pocket: { padding: '10px 0', borderBottom: '1px solid #1a1a1a', marginTop: 8 },
   pocketHead: { display: 'flex', justifyContent: 'space-between', marginBottom: 4 },
-  pocketId: { fontWeight: 600, color: '#f1f5f9', fontSize: 12 },
-  pocketVol: { color: '#3b82f6', fontSize: 11 },
-  pocketStats: { display: 'flex', gap: 12, fontSize: 11, color: '#64748b' },
+  pocketId: { fontWeight: 500, color: '#ededed', fontSize: 13 },
+  pocketVol: { color: '#888888', fontSize: 12 },
+  pocketStats: { display: 'flex', gap: 16, fontSize: 12, color: '#666666' },
 }
 
 export default App

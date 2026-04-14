@@ -20,6 +20,12 @@ async def analyze_by_pdb_id(request: PDBRequest):
     try:
         logger.info(f"Analyzing: {request.pdb_id}")
 
+        if predictor.model is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Model is not trained. Train the model before hotspot prediction.",
+            )
+
         protein = parse_protein(request.pdb_id, is_file=False)
 
         sasa_calc = SASAcalculator()
@@ -28,9 +34,8 @@ async def analyze_by_pdb_id(request: PDBRequest):
         extractor = FeatureExtractor()
         features = extractor.extract_all_features(protein, surface_residues)
 
-        if predictor.model:
-            predictions = predictor.predict(features)
-            features["hotspots"] = predictions
+        predictions = predictor.predict(features)
+        features["hotspots"] = predictions
 
         analysis_cache[request.pdb_id] = features
 
@@ -48,6 +53,12 @@ async def analyze_by_pdb_id(request: PDBRequest):
 @router.post("/analyze/file")
 async def analyze_by_file(file: UploadFile = File(...)):
     try:
+        if predictor.model is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Model is not trained. Train the model before hotspot prediction.",
+            )
+
         suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             content = await file.read()
@@ -65,9 +76,8 @@ async def analyze_by_file(file: UploadFile = File(...)):
         extractor = FeatureExtractor()
         features = extractor.extract_all_features(protein, surface_residues)
 
-        if predictor.model:
-            predictions = predictor.predict(features)
-            features["hotspots"] = predictions
+        predictions = predictor.predict(features)
+        features["hotspots"] = predictions
 
         return AnalysisResponse(
             protein_id=protein.pdb_id,
@@ -82,13 +92,22 @@ async def analyze_by_file(file: UploadFile = File(...)):
 @router.post("/train")
 async def train_model(request: TrainRequest):
     try:
-        trainer.train(request.pdb_ids, epochs=request.epochs)
+        trainer.train(
+            request.pdb_ids,
+            epochs=request.epochs,
+            max_proteins=request.max_proteins,
+            seed=request.seed,
+        )
         predictor.load_model(trainer.best_model)
 
         return {
             "success": True,
-            "message": f"Trained for {request.epochs} epochs",
+            "message": f"Trained for {request.epochs} epochs on up to {request.max_proteins} proteins (seed={request.seed})",
             "loss": trainer.losses[-1] if trainer.losses else None,
+            "test_metrics": trainer.best_metrics.get("test_metrics", {}),
+            "selected_proteins": trainer.best_metrics.get("selected_proteins", []),
+            "selected_count": trainer.best_metrics.get("selected_count", 0),
+            "seed": trainer.best_metrics.get("seed", request.seed),
         }
 
     except Exception as e:
@@ -100,6 +119,7 @@ async def model_status():
     return {
         "is_trained": predictor.model is not None,
         "training_steps": len(trainer.losses),
+        "test_metrics": trainer.best_metrics.get("test_metrics", {}),
     }
 
 
@@ -112,6 +132,11 @@ async def get_pockets(pdb_id: str):
 
 @router.get("/hotspots/{pdb_id}")
 async def get_hotspots(pdb_id: str):
+    if predictor.model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Model is not trained. Train the model before requesting hotspots.",
+        )
     if pdb_id not in analysis_cache:
         raise HTTPException(status_code=404, detail="Not analyzed")
     return analysis_cache[pdb_id].get("hotspots", [])

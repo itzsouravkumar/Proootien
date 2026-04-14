@@ -1,2 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0f172a; }
+body { 
+  background: #000000; 
+  color: #ededed;
+  font-family: 'Poppins', sans-serif; 
+  -webkit-font-smoothing: antialiased;
+}

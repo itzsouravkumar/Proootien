@@ -15,7 +15,9 @@ class AnalysisResponse(BaseModel):
 
 class TrainRequest(BaseModel):
     pdb_ids: List[str]
-    epochs: int = 50
+    epochs: int = 100
+    max_proteins: int = 50
+    seed: int = 42
 
 
 class PredictRequest(BaseModel):

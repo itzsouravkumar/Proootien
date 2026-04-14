@@ -58,53 +58,56 @@ protein_surface_analyzer/
 ### Installation
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/weeyev/proteins.git
-   cd proteins
-   ```
 
-2. **Set up Python environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
+```bash
+git clone https://github.com/weeyev/proteins.git
+cd proteins
+```
 
-3. **Set up frontend**
-   ```bash
-   cd frontend
-   npm install
-   ```
+2. **Install all dependencies (venv + frontend) from repo root**
+
+```bash
+npm install
+npm run setup
+```
+
+This creates/uses `./venv` and installs Python dependencies with `./venv/bin/python -m pip ...` (no global Python installs).
 
 ### Running the Application
 
-**Terminal 1 - Backend:**
-```bash
-cd proteins
-source venv/bin/activate
-uvicorn backend.main:app --port 8000 --reload
-```
+**Single command (Backend + Frontend together):**
 
-**Terminal 2 - Frontend:**
 ```bash
-cd proteins/frontend
 npm run dev
 ```
 
 Open http://localhost:5173 in your browser.
+
+If you still want separate processes:
+
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
+
+All backend commands use `./venv/bin/python`, so the backend always runs inside your local virtual environment.
 
 ### Generate GNN Training Visuals (for presentations)
 
 This script runs the real backend pipeline (PDB parsing, surface graph extraction, label generation, and GNN training) and exports visual PNGs.
 
 ```bash
-source venv/bin/activate
-python gnn_training_storyboard.py --pdb-ids 1crn 4hhb 1ubq --epochs 60
+npm run train -- --pdb-ids 1crn 4hhb 1ubq --epochs 60
+```
+
+To generate visualization assets from an already-trained model:
+
+```bash
+npm run train:viz
 ```
 
 Output files are saved to `training_visualization/`:
+
 - `gnn_data_pipeline.png`
 - `gnn_training_dynamics.png`
 - `gnn_architecture_flow.png`
@@ -112,13 +115,13 @@ Output files are saved to `training_visualization/`:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/analyze/pdb` | POST | Analyze a protein by PDB ID |
-| `/api/v1/analyze/file` | POST | Analyze uploaded PDB file |
-| `/api/v1/train` | POST | Train GNN on specified proteins |
-| `/api/v1/model/status` | GET | Check if model is trained |
-| `/api/v1/hotspots/{pdb_id}` | GET | Get hotspots for analyzed protein |
+| Endpoint                    | Method | Description                       |
+| --------------------------- | ------ | --------------------------------- |
+| `/api/v1/analyze/pdb`       | POST   | Analyze a protein by PDB ID       |
+| `/api/v1/analyze/file`      | POST   | Analyze uploaded PDB file         |
+| `/api/v1/train`             | POST   | Train GNN on specified proteins   |
+| `/api/v1/model/status`      | GET    | Check if model is trained         |
+| `/api/v1/hotspots/{pdb_id}` | GET    | Get hotspots for analyzed protein |
 
 ### Example: Analyze a Protein
 
@@ -141,6 +144,7 @@ curl -X POST http://localhost:8000/api/v1/train \
 ### 1. PDB Parsing & Surface Detection
 
 The system fetches protein structures from RCSB and uses BioPython to:
+
 - Parse atomic coordinates
 - Calculate residue centers
 - Compute SASA using Shrake-Rupley algorithm
@@ -149,6 +153,7 @@ The system fetches protein structures from RCSB and uses BioPython to:
 ### 2. Graph Construction
 
 Surface residues are connected into a graph:
+
 - **Nodes**: Each surface residue
 - **Edges**: Residues within 8Å of each other
 - **Features**: AA type, hydrophobicity, charge, SASA, pocket membership
@@ -156,6 +161,7 @@ Surface residues are connected into a graph:
 ### 3. Pocket Detection
 
 Binding cavities are detected using concavity analysis:
+
 1. Compare each residue's distance from protein center vs. neighbors
 2. Cluster residues that are closer to center than surrounding residues
 3. Score pockets by volume and hydrophobicity
@@ -165,6 +171,7 @@ Binding cavities are detected using concavity analysis:
 The model learns to predict binding hotspots using:
 
 **Input Features (12-dim):**
+
 - Amino acid index (normalized)
 - Hydrophobicity
 - Charge
@@ -179,6 +186,7 @@ The model learns to predict binding hotspots using:
 - Neighbor binding ratio
 
 **Training Labels:**
+
 - Pocket membership (35%)
 - Binding-prone residue types (F,Y,W,H,D,E,K,R,C) (25%)
 - High SASA (10%)
@@ -186,6 +194,7 @@ The model learns to predict binding hotspots using:
 - Cysteine bonus (15%)
 
 **Architecture:**
+
 - 256 hidden units with batch norm
 - GELU activation + dropout
 - Skip connections for gradient flow
@@ -194,6 +203,7 @@ The model learns to predict binding hotspots using:
 ### 5. Visualization
 
 The 3D viewer shows:
+
 - **Cartoon representation** of protein structure
 - **Hotspot highlighting** by score:
   - 🔴 Red: Top 3 residues
@@ -209,12 +219,14 @@ The 3D viewer shows:
 ## Technologies
 
 ### Backend
+
 - **FastAPI** - Modern Python web framework
 - **Biopython** - Biological sequence analysis
 - **PyTorch** - Neural network framework
 - **NumPy/SciPy** - Numerical computing
 
 ### Frontend
+
 - **React 18** - UI framework
 - **Vite** - Build tool
 - **3Dmol.js** - WebGL molecular viewer

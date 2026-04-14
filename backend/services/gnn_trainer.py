@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import logging
+import random
 from typing import List, Dict, Any
 import os
 
@@ -122,6 +123,12 @@ class GNNTrainer:
         self.optimizer = None
         self.losses = []
         self.best_model = None
+        self.best_metrics = {
+            "test_metrics": {},
+            "selected_proteins": [],
+            "selected_count": 0,
+            "seed": None,
+        }
 
     def _extract_features(self, r, neighbor_feats):
         """Extract 12-dimensional feature vector for a residue."""
@@ -238,16 +245,36 @@ class GNNTrainer:
         )
         return np.clip(score, 0.0, 1.0)
 
-    def train(self, pdb_ids: List[str], epochs: int = 100):
+    def train(
+        self,
+        pdb_ids: List[str],
+        epochs: int = 100,
+        max_proteins: int = 50,
+        seed: int = 42,
+    ):
         """Train the GNN on a list of PDB structures."""
-        logger.info(f"Training on {len(pdb_ids)} proteins for {epochs} epochs")
+        rng = random.Random(seed)
+        selected_pdb_ids = list(pdb_ids)
+        if max_proteins and max_proteins > 0 and len(selected_pdb_ids) > max_proteins:
+            selected_pdb_ids = rng.sample(selected_pdb_ids, max_proteins)
+
+        logger.info(
+            f"Training on {len(selected_pdb_ids)} proteins for {epochs} epochs (seed={seed})"
+        )
+
+        self.best_metrics = {
+            "test_metrics": {},
+            "selected_proteins": selected_pdb_ids,
+            "selected_count": len(selected_pdb_ids),
+            "seed": seed,
+        }
 
         from backend.core.pdb_parser import parse_protein, SASAcalculator
         from backend.core.feature_extraction import FeatureExtractor
 
         X, y = [], []
 
-        for pdb_id in pdb_ids:
+        for pdb_id in selected_pdb_ids:
             try:
                 protein = parse_protein(pdb_id, is_file=False)
                 sasa_calc = SASAcalculator()
@@ -350,6 +377,11 @@ class GNNTrainer:
 
         os.makedirs("models", exist_ok=True)
         torch.save(self.model.state_dict(), "models/gnn.pt")
+        self.best_metrics["test_metrics"] = {
+            "best_loss": float(best_loss),
+            "final_loss": float(self.losses[-1]) if self.losses else None,
+            "epochs": int(epochs),
+        }
         logger.info(f"Training done. Best loss: {best_loss:.6f}")
 
 
